@@ -1,29 +1,26 @@
-# 1) Build stage
+# ─── 1) Builder ──────────────────────────────────────────────────────────────
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-# Install deps
+# install all deps (including dev)
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy source & generate Prisma client
-COPY prisma ./prisma
+# copy sources & build
 COPY . .
-RUN npx prisma generate
 RUN npm run build
 
-# 2) Run stage
+# ─── 2) Runtime ──────────────────────────────────────────────────────────────
 FROM node:18-alpine AS runner
 WORKDIR /app
+ENV NODE_ENV=production
 
-# copy built artifacts + node_modules + Prisma client
-COPY --from=builder /app/node_modules ./node_modules
+# copy only what's needed to run
 COPY --from=builder /app/.next       ./.next
 COPY --from=builder /app/public      ./public
-COPY --from=builder /app/prisma      ./prisma
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 
-# expose and default start
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+CMD ["npm", "start"]
 
