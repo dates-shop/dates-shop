@@ -2,8 +2,8 @@ import { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-    title: 'My Website',
-    description: 'A simple landing page',
+    title: 'Dates Shop',
+    description: 'Browse, buy, and sell farm fresh dates to people across the world.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
