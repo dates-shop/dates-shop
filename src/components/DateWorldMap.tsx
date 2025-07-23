@@ -1,16 +1,19 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { geoMercator, geoPath, GeoProjection } from "d3-geo";
-import { zoom } from "d3-zoom";
+import { zoom, zoomIdentity } from "d3-zoom";
 import { select, Selection } from "d3-selection";
 import { feature } from "topojson-client";
 import worldTopo from "world-atlas/countries-110m.json";
 import { DATE_VARIETIES, DateVariety } from "@/data/datesData";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const mapCountryName = (c: string) =>
-  c === "USA" ? "United States of America" : c;
+const mapCountryName = (c: string) => {
+  if (c === 'USA' || c === 'United States') 
+    return 'United States of America';
+  return c;
+};
 
 export default function DateWorldMap() {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -19,10 +22,10 @@ export default function DateWorldMap() {
   const [tabIndex, setTabIndex] = useState(0);
   const [hoveredId, setHoveredId] = useState<string | number | null>(null);
 
-  const width = 800;
   const height = 450;
+  const width = 800;
 
-  // Geo features
+  // load TopoJSON → GeoJSON features
   const worldFeatures = useMemo(() => {
     return (feature(worldTopo as any, (worldTopo as any).objects.countries)
       .features as any[]
@@ -35,14 +38,14 @@ export default function DateWorldMap() {
     }));
   }, []);
 
-  // Countries with date-varieties
+  // which countries have dates
   const highlightedSet = useMemo(
     () => new Set(DATE_VARIETIES.map((d) => mapCountryName(d.country))),
     []
   );
   const highlightedList = useMemo(() => Array.from(highlightedSet), [highlightedSet]);
 
-  // Variants for UI panel
+  // variants panel content
   const variants: DateVariety[] = useMemo(() => {
     if (!selectedCountry) return [];
     return DATE_VARIETIES.filter(
@@ -50,58 +53,63 @@ export default function DateWorldMap() {
     );
   }, [selectedCountry]);
 
-  // Projection & path
+  // projection + path
   const projection = useMemo<GeoProjection>(
     () => geoMercator().scale(width / 6).translate([width / 2, height / 2]),
     []
   );
   const pathGenerator = useMemo(() => geoPath().projection(projection), [projection]);
 
-  // Zoom behavior
+  // d3 zoom
   useEffect(() => {
     if (!svgRef.current || !gRef.current) return;
-    const svg = select(svgRef.current) as Selection<
-      SVGSVGElement,
-      unknown,
-      null,
-      undefined
-    >;
-    const g = select(gRef.current) as Selection<SVGGElement, unknown, null, undefined>;
+    const svg = select(svgRef.current) as Selection<SVGSVGElement, unknown, null, undefined>;
+    const g   = select(gRef.current)  as Selection<SVGGElement, unknown, null, undefined>;
+
     const zm = zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 8])
+      .translateExtent([[0, 0], [width, height]])
+      .filter((event) => event.type !== "wheel")
       .on("zoom", (event) => {
         g.attr("transform", event.transform.toString());
       });
-    svg.call(zm as any);
-  }, []);
 
-  // Mobile nav helpers
+    svg.call(zm as any);
+
+    // initial 2× centered
+    const initialTransform = zoomIdentity
+      .translate(width / 2, height / 2)
+      .scale(2)
+      .translate(-width / 2, -height / 2);
+
+    svg.call(zm.transform as any, initialTransform);
+  }, [width, height]);
+
+  // mobile prev/next
   const prevCountry = () => {
     if (!selectedCountry) return;
     const idx = highlightedList.indexOf(selectedCountry);
-    const prevIdx = (idx - 1 + highlightedList.length) % highlightedList.length;
-    setSelectedCountry(highlightedList[prevIdx]);
+    setSelectedCountry(highlightedList[(idx - 1 + highlightedList.length) % highlightedList.length]);
     setTabIndex(0);
   };
   const nextCountry = () => {
     if (!selectedCountry) return;
     const idx = highlightedList.indexOf(selectedCountry);
-    const nextIdx = (idx + 1) % highlightedList.length;
-    setSelectedCountry(highlightedList[nextIdx]);
+    setSelectedCountry(highlightedList[(idx + 1) % highlightedList.length]);
     setTabIndex(0);
   };
 
-  // Initialize selection
+  // auto-select first
   useEffect(() => {
-    if (!selectedCountry && highlightedList.length > 0) {
+    if (!selectedCountry && highlightedList.length) {
       setSelectedCountry(highlightedList[0]);
     }
   }, [highlightedList, selectedCountry]);
 
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* Desktop & Tablet */}
-      <div className="hidden md:flex">
+    <div className="max-w-5xl pt-10 mx-[20vw]">
+      {/* Desktop/Tablet */}
+      <div className="hidden w-[60vw] md:flex">
         <div className="flex-1">
           <svg
             ref={svgRef}
@@ -114,16 +122,15 @@ export default function DateWorldMap() {
               {worldFeatures.map((feat) => {
                 const name = feat.properties.NAME as string;
                 const isActive = highlightedSet.has(name);
-                const isSelected = name === selectedCountry;
                 const isHovered = hoveredId === feat.id;
                 const fillColor = isHovered
                   ? "var(--orange-light)"
                   : isActive
-                  ? "var(--orange-primary)"
-                  : "var(--orange-light)";
+                    ? "var(--orange-primary)"
+                    : "var(--orange-light)";
                 return (
                   <path
-                    key={name}
+                    key={feat.id}
                     d={pathGenerator(feat) || undefined}
                     fill={fillColor}
                     stroke="#fff"
@@ -134,12 +141,40 @@ export default function DateWorldMap() {
                     }}
                     onMouseEnter={() => setHoveredId(feat.id)}
                     onMouseLeave={() => setHoveredId(null)}
-                    onClick={() =>
-                      isActive && (setSelectedCountry(name), setTabIndex(0))
-                    }
+                    onClick={() => {
+                      if (isActive) {
+                        setSelectedCountry(name);
+                        setTabIndex(0);
+                      }
+                    }}
                   />
                 );
               })}
+            </g>
+
+            {/* — indicator drawn inside the SVG — */}
+            <g pointerEvents="none">
+              {/* semi-opaque white box */}
+              <rect
+                x={width - 110}
+                y={height - 30}
+                width={100}
+                height={20}
+                rx={4}
+                fill="#fff"
+                fillOpacity={0.75}
+              />
+              {/* label */}
+              <text
+                x={width - 60}
+                y={height - 15}
+                fontSize={12}
+                fill="#333"
+                textAnchor="middle"
+                alignmentBaseline="middle"
+              >
+                Drag to pan
+              </text>
             </g>
           </svg>
         </div>
@@ -175,7 +210,7 @@ export default function DateWorldMap() {
         )}
       </div>
 
-      {/* Mobile (unchanged) */}
+      {/* Mobile */}
       {selectedCountry && variants.length > 0 && (
         <div className="block md:hidden">
           <div className="flex flex-col items-center">
@@ -195,7 +230,7 @@ export default function DateWorldMap() {
                       : "var(--orange-light)";
                     return (
                       <path
-                        key={name}
+                        key={feat.id}
                         d={pathGenerator(feat) || undefined}
                         fill={fillColor}
                         stroke="#fff"
@@ -204,7 +239,31 @@ export default function DateWorldMap() {
                     );
                   })}
                 </g>
+
+                {/* same pan badge inside mobile SVG */}
+                <g pointerEvents="none">
+                  <rect
+                    x={width - 110}
+                    y={height - 30}
+                    width={100}
+                    height={20}
+                    rx={4}
+                    fill="#fff"
+                    fillOpacity={0.75}
+                  />
+                  <text
+                    x={width - 60}
+                    y={height - 15}
+                    fontSize={12}
+                    fill="#333"
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                  >
+                    Drag to pan
+                  </text>
+                </g>
               </svg>
+
               <button
                 className="absolute left-0 top-1/2 transform -translate-y-1/2 p-2"
                 onClick={prevCountry}

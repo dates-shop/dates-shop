@@ -37,6 +37,7 @@ export default function Navbar() {
         {/* Desktop Nav Links */}
         <ul className="hidden md:flex absolute left-1/2 -translate-x-1/2 gap-8 text-[20pt]">
           <li><a href="/" className={linkClasses}>Home</a></li>
+          <li><a href="/contact" className={linkClasses}>Contact Us</a></li>
           <li><a href="/dashboard" className={linkClasses}>Dashboard</a></li>
         </ul>
 

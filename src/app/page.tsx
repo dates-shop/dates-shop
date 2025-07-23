@@ -8,8 +8,18 @@ export default function Home() {
     <>
       <Navbar />
 
+      <section className="min-h-[90vh] px-6 z-10 py-40">
+        <h2 className="text-3xl md:text-5xl font-bold text-[var(--reddish-black)] mb-4 text-center">
+          Explore Our Date Varieties
+        </h2>
+        <p className="text-xl text-[var(--reddish-black)] mb-4 text-center">
+          Tour the world and find out what we think is so special about dates.
+        </p>
+        <DateWorldMap />
+      </section>
+
       <section
-        className="min-h-screen flex flex-col justify-center items-center text-center px-8 pt-40 pb-16 bg-cover bg-center"
+        className="min-h-[50vh] flex flex-col justify-center items-center text-center px-8 pt-40 pb-16 bg-cover bg-center"
         style={{ backgroundImage: "url('/images/dates.jpg')" }}
       >
       </section>
@@ -26,15 +36,6 @@ export default function Home() {
         </p>
       </section>
 
-      <section className="px-6 py-20">
-        <h2 className="text-3xl md:text-5xl font-bold text-[var(--reddish-black)] mb-4 text-center">
-          Explore Our Date Varieties
-        </h2>
-        <p className="text-xl text-[var(--reddish-black)] mb-4 text-center">
-          Tour the world and find out what we think is so special about dates.
-        </p>
-        <DateWorldMap />
-      </section>
 
       <Footer />
     </>

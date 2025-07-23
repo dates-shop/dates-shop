@@ -1,30 +1,9 @@
 version: "3.9"
 services:
-  db:
-    image: postgres:15
-    env_file: .env
-    environment:
-      POSTGRES_USER: "${POSTGRES_USER}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
-      POSTGRES_DB: "${POSTGRES_DB}"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   app:
     build: .
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
     ports:
       - "3000:3000"
-    depends_on:
-      db:
-        condition: service_healthy
-
-volumes:
-  db_data:
-
