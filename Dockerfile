@@ -1,33 +1,38 @@
-# Dockerfile
-
-# ——— builder stage ———
-FROM node:18-alpine AS builder
+# ─── base dependencies stage ───
+FROM node:18-alpine AS deps
 WORKDIR /app
 
-# 1. Install dependencies
+# only copy package.json / lockfile, install all deps
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# 2. Copy Prisma schema & generate client
-COPY prisma ./prisma
-RUN npx prisma generate
+# ─── builder: compile your Next.js app ───
+FROM node:18-alpine AS builder
+WORKDIR /app
 
-# 3. Copy the rest of your code & build Next
+# bring in deps & source
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# build the production artifacts
 RUN npm run build
 
-# ——— runner stage ———
+# ─── runner: lean production image ───
 FROM node:18-alpine AS runner
 WORKDIR /app
 
-# 1. Bring over only what we need
-COPY --from=builder /app/node_modules ./node_modules
+# run in production mode
+ENV NODE_ENV=production
+
+# copy only what Next needs to run
 COPY --from=builder /app/.next       ./.next
 COPY --from=builder /app/public       ./public
-COPY --from=builder /app/prisma       ./prisma
-COPY --from=builder /app/package.json ./
+# finally, bring in only the production deps
+COPY --from=deps    /app/node_modules ./node_modules
+COPY package.json    ./package.json
 
-# 2. Expose and start
 EXPOSE 3000
-CMD ["npm","start"]
+
+# use next’s built-in start command
+CMD ["npx", "next", "start"]
 

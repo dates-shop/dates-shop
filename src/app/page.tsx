@@ -10,10 +10,10 @@ export default function Home() {
 
       <section className="min-h-[90vh] px-6 z-10 py-40">
         <h2 className="text-3xl md:text-5xl font-bold text-[var(--reddish-black)] mb-4 text-center">
-          Explore Our Date Varieties
+          Explore The Dates of the World
         </h2>
         <p className="text-xl text-[var(--reddish-black)] mb-4 text-center">
-          Tour the world and find out what we think is so special about dates.
+          Tour the world and find out where the dates on our marketplace come from
         </p>
         <DateWorldMap />
       </section>
@@ -35,7 +35,6 @@ export default function Home() {
           farm-to-door freshness.
         </p>
       </section>
-
 
       <Footer />
     </>

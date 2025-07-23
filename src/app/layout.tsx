@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { Providers } from "./providers"
+import NewsletterPopup from '@/components/NewsLetterPopup'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <body>
                 <Providers>
                     {children}
+                    <NewsletterPopup />
                 </Providers>
             </body>
         </html>
